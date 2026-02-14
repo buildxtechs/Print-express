@@ -9,7 +9,10 @@ import { v2 as cloudinary } from 'cloudinary';
 import PDFDocument from 'pdfkit';
 import stripeModule from 'stripe';
 
-const stripe = new stripeModule(process.env.STRIPE_SECRET_KEY);
+// Make Stripe optional - only initialize if API key is provided
+const stripe = process.env.STRIPE_SECRET_KEY
+    ? new stripeModule(process.env.STRIPE_SECRET_KEY)
+    : null;
 
 // Helper for Custom Page Counting
 const calculateCustomPageCount = (range) => {
@@ -343,6 +346,11 @@ export const updateOrderAndRecalculate = async (req, res) => {
 // Generate Stripe Payment Link for Order Payment : /api/order/payment-link/:orderId
 export const generatePaymentLink = async (req, res) => {
     try {
+        // Check if Stripe is configured
+        if (!stripe) {
+            return res.json({ success: false, message: "Payment gateway not configured. Please use alternative payment methods." });
+        }
+
         const { orderId } = req.params;
         const order = await Order.findById(orderId).populate('userId');
         if (!order) return res.json({ success: false, message: "Order not found" });
@@ -446,6 +454,11 @@ export const updateOrderStatus = async (req, res) => {
 
 // Stripe Webhooks Handler : /api/order/webhook
 export const stripeWebhooks = async (req, res) => {
+    // Check if Stripe is configured
+    if (!stripe) {
+        return res.status(400).send('Stripe not configured');
+    }
+
     const sig = req.headers['stripe-signature'];
     let event;
 
