@@ -21,7 +21,15 @@ const PricingRules = () => {
                     additional: {
                         binding: fetchedRules.additional?.binding || 50,
                         hard_binding: fetchedRules.additional?.hard_binding || 200,
+                        chart_binding: fetchedRules.additional?.chart_binding || 150,
                         handling_fee: fetchedRules.additional?.handling_fee || 10
+                    },
+                    delivery: fetchedRules.delivery || 40,
+                    delivery_tiers: fetchedRules.delivery_tiers || {
+                        tier_a: 40,
+                        tier_b: 60,
+                        tier_c: 80,
+                        tier_d: 150
                     }
                 };
                 setRules(normalizedRules);
@@ -108,7 +116,7 @@ const PricingRules = () => {
                 {/* Additional Charges */}
                 <div className="card-premium p-8 space-y-6 md:col-span-2">
                     <h3 className="font-bold">Other Services & Fees</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-text-muted uppercase">Spiral Binding</label>
                             <input
@@ -126,7 +134,15 @@ const PricingRules = () => {
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-text-muted uppercase">Handling Fee (per order)</label>
+                            <label className="text-xs font-bold text-text-muted uppercase">Chart Binding</label>
+                            <input
+                                value={rules.additional.chart_binding}
+                                onChange={(e) => setRules({ ...rules, additional: { ...rules.additional, chart_binding: Number(e.target.value) } })}
+                                type="number" className="input-field"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-text-muted uppercase">Handling Fee</label>
                             <input
                                 value={rules.additional.handling_fee}
                                 onChange={(e) => setRules({ ...rules, additional: { ...rules.additional, handling_fee: Number(e.target.value) } })}
@@ -134,6 +150,52 @@ const PricingRules = () => {
                             />
                         </div>
                     </div>
+                </div>
+
+                {/* Delivery Tiers */}
+                <div className="card-premium p-8 space-y-6 md:col-span-2">
+                    <div className="flex items-center justify-between">
+                        <h3 className="font-bold flex items-center gap-2">
+                            <span className="bg-orange-100 p-2 rounded-lg">🚚</span> Volume-Based Delivery Charges
+                        </h3>
+                        <p className="text-[10px] bg-secondary/10 text-secondary px-3 py-1 rounded-full font-bold">Dynamic Tiers</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-text-muted uppercase block">Tier A (&lt;100 Pages)</label>
+                            <input
+                                value={rules.delivery_tiers.tier_a}
+                                onChange={(e) => setRules({ ...rules, delivery_tiers: { ...rules.delivery_tiers, tier_a: Number(e.target.value) } })}
+                                type="number" className="input-field"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-text-muted uppercase block">Tier B (&gt;200 Pages)</label>
+                            <input
+                                value={rules.delivery_tiers.tier_b}
+                                onChange={(e) => setRules({ ...rules, delivery_tiers: { ...rules.delivery_tiers, tier_b: Number(e.target.value) } })}
+                                type="number" className="input-field"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-text-muted uppercase block">Tier C (&gt;500 Pages)</label>
+                            <input
+                                value={rules.delivery_tiers.tier_c}
+                                onChange={(e) => setRules({ ...rules, delivery_tiers: { ...rules.delivery_tiers, tier_c: Number(e.target.value) } })}
+                                type="number" className="input-field"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-text-muted uppercase block">Tier D (Bulk 1000+)</label>
+                            <input
+                                value={rules.delivery_tiers.tier_d}
+                                onChange={(e) => setRules({ ...rules, delivery_tiers: { ...rules.delivery_tiers, tier_d: Number(e.target.value) } })}
+                                type="number" className="input-field"
+                            />
+                        </div>
+                    </div>
+                    <p className="text-[10px] text-text-muted italic">Note: These tiers are applied automatically in the Delivery Estimator and Checkout based on total page count.</p>
                 </div>
 
                 <div className="md:col-span-2">

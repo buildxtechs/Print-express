@@ -15,7 +15,14 @@ export const getPricing = async (req, res) => {
                     additional: {
                         binding: 50,
                         hard_binding: 200,
+                        chart_binding: 150,
                         handling_fee: 10
+                    },
+                    delivery_tiers: {
+                        tier_a: 40,
+                        tier_b: 60,
+                        tier_c: 80,
+                        tier_d: 150
                     }
                 }
             });
@@ -30,10 +37,10 @@ export const getPricing = async (req, res) => {
 // Update Pricing Rules (Admin) : /api/pricing/update
 export const updatePricing = async (req, res) => {
     try {
-        const { printing, additional } = req.body;
+        const { printing, additional, delivery_tiers } = req.body;
         const pricing = await Pricing.findOneAndUpdate(
             { type: 'printing_rules' },
-            { rules: { printing, additional } },
+            { rules: { printing, additional, delivery_tiers } },
             { new: true, upsert: true }
         );
         res.json({ success: true, pricing });

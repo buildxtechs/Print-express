@@ -18,6 +18,9 @@ import walletRouter from './routes/walletRoute.js';
 import couponRouter from './routes/couponRoute.js';
 import queryRouter from './routes/queryRoute.js';
 import shopRouter from './routes/shopRoute.js';
+import billingRouter from './routes/billingRoute.js';
+import systemRouter from './routes/systemRoute.js';
+import bannerRouter from './routes/bannerRoute.js';
 import { stripeWebhooks } from './controllers/orderController.js';
 
 const app = express();
@@ -29,7 +32,7 @@ await connectCloudinary()
 // Allow multiple origins
 const allowedOrigins = ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175']
 
-app.post('/stripe', express.raw({ type: 'application/json' }), stripeWebhooks)
+app.post('/api/order/webhook', express.raw({ type: 'application/json' }), stripeWebhooks)
 
 // Middleware configuration
 app.use(express.json());
@@ -51,6 +54,9 @@ app.use('/api/wallet', walletRouter)
 app.use('/api/coupon', couponRouter)
 app.use('/api/support', queryRouter)
 app.use('/api/shop', shopRouter)
+app.use('/api/billing', billingRouter)
+app.use('/api/system', systemRouter)
+app.use('/api/banner', bannerRouter)
 
 app.listen(port, () => {
     console.log('\n╔══════════════════════════════════════╗');

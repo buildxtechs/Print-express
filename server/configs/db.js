@@ -1,34 +1,88 @@
 import mongoose from "mongoose";
 
+const seedServices = async () => {
+    try {
+        const Service = mongoose.model('service');
+        const count = await Service.countDocuments();
+        if (count === 0) {
+            const defaultServices = [
+                { icon: '📄', name: 'B/W A4 Print', description: 'Black & white document printing on standard A4 paper', price: 2, category: 'Printing', status: 'Active' },
+                { icon: '🌈', name: 'Color A4 Print', description: 'Full color document printing on A4 paper', price: 10, category: 'Printing', status: 'Active' },
+                { icon: '🖼️', name: 'Photo Print (4x6)', description: 'High quality photo printing in 4x6 inch format', price: 15, category: 'Printing', status: 'Active' },
+                { icon: '🪪', name: 'PVC ID Card', description: 'Durable PVC ID cards with photos and text', price: 100, category: 'ID Card', status: 'Active' },
+                { icon: '📚', name: 'Spiral Binding', description: 'Professional spiral binding for documents', price: 50, category: 'Binding', status: 'Active' },
+                { icon: '📋', name: 'Lamination (A4)', description: 'Protective lamination for A4 documents', price: 30, category: 'Lamination', status: 'Active' },
+            ];
+            await Service.insertMany(defaultServices);
+            console.log('✅ Seeded default services');
+        }
+    } catch (error) {
+        console.error('❌ Service Seeding Error:', error.message);
+    }
+}
+
+const seedStaffUsers = async () => {
+    try {
+        const User = mongoose.model('user');
+
+        const staffData = [
+            {
+                name: 'Admin',
+                email: 'admin@printexpress.com',
+                password: 'Anbu@24',
+                role: 'admin',
+                phone: '0000000000'
+            },
+            {
+                name: 'Billing',
+                email: 'billing@printexpress.com',
+                password: 'Billing@123',
+                role: 'billing_manager',
+                phone: '1111111111'
+            }
+        ];
+
+        for (const staff of staffData) {
+            const exists = await User.findOne({ role: staff.role });
+            if (!exists) {
+                await User.create(staff);
+                console.log(`✅ Seeded ${staff.role} user`);
+            }
+        }
+    } catch (error) {
+        console.error('❌ Seeding Error:', error.message);
+    }
+}
+
 const connectDB = async () => {
     try {
-        mongoose.connection.on('connected', () => {
+        mongoose.connection.on('connected', async () => {
             console.log('\n╔══════════════════════════════════════╗');
             console.log('║  ✅ Database Connected Successfully  ║');
             console.log('║  📦 MongoDB Atlas - greencart        ║');
             console.log('╚══════════════════════════════════════╝\n');
+            await seedStaffUsers();
+            await seedServices();
         });
 
         mongoose.connection.on('error', (err) => {
-            console.log('\n╔══════════════════════════════════════╗');
-            console.log('║  ❌ Database Connection Failed       ║');
-            console.log(`║  Error: ${err.message.substring(0, 28).padEnd(28)} ║`);
-            console.log('╚══════════════════════════════════════╝\n');
+            console.error('❌ Database Connection Error:', err.message);
         });
 
         mongoose.connection.on('disconnected', () => {
             console.log('⚠️  Database Disconnected');
         });
 
-        const uri = process.env.MONGODB_URI.endsWith('/')
-            ? process.env.MONGODB_URI.slice(0, -1)
-            : process.env.MONGODB_URI;
-
-        console.log('🔄 Connecting to MongoDB...');
-        await mongoose.connect(`${uri}/greencart`);
+        // ... (rest of connection logic)
+        const uri = process.env.MONGODB_URI;
+        if (!uri || uri.includes('abc:abc')) {
+            await mongoose.connect('mongodb://localhost:27017/print-express');
+        } else {
+            const cleanUri = uri.endsWith('/') ? uri.slice(0, -1) : uri;
+            await mongoose.connect(`${cleanUri}/print-express`);
+        }
     } catch (error) {
         console.error('\n❌ Database Connection Error:', error.message);
-        console.error('   Please check your MONGODB_URI in .env\n');
     }
 }
 

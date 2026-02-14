@@ -1,6 +1,6 @@
 import React from 'react';
 
-const PrintingAnimation = () => {
+const PrintingAnimation = ({ message = "Preparing your print job..." }) => {
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
             <div className="relative w-80 h-80">
@@ -70,7 +70,7 @@ const PrintingAnimation = () => {
                 <h3 className="text-2xl font-bold font-outfit bg-gradient-to-r from-blue-800 to-blue-600 bg-clip-text text-transparent">
                     Processing Your Documents
                 </h3>
-                <p className="text-gray-600 animate-pulse">Preparing your print job...</p>
+                <p className="text-gray-600 animate-pulse">{message}</p>
             </div>
 
             {/* Progress dots */}

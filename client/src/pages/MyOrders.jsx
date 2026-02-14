@@ -5,7 +5,7 @@ import toast from 'react-hot-toast'
 const MyOrders = () => {
 
     const [myOrders, setMyOrders] = useState([])
-    const { axios, user } = useAppContext()
+    const { axios, user, setShowUserLogin } = useAppContext()
 
     const fetchMyOrders = async () => {
         try {
@@ -24,21 +24,27 @@ const MyOrders = () => {
             case 'printing': return 'bg-yellow-100 text-yellow-600';
             case 'ready': return 'bg-purple-100 text-purple-600';
             case 'delivered': return 'bg-green-100 text-green-600';
+            case 'failed': return 'bg-red-100 text-red-600';
+            case 'cancelled': return 'bg-gray-100 text-gray-500 line-through';
             default: return 'bg-gray-100 text-gray-600';
         }
     }
 
     const trackOnWA = (order) => {
         const supportPhone = "+919876543210"; // Print Express Support
-        const message = `Hello Print Express! I'd like to track my order #${order._id.slice(-8).toUpperCase()}. It is currently ${order.status.toUpperCase()}.`;
+        const message = `Hello Print Express! I'd like to track my order #${order._id.toString().slice(-8).toUpperCase()}. It is currently ${order.status.toUpperCase()}.`;
         window.open(`https://wa.me/${supportPhone}?text=${encodeURIComponent(message)}`, '_blank');
     }
 
     useEffect(() => {
-        if (user) {
+        if (!user) {
+            setShowUserLogin(true);
+        } else {
             fetchMyOrders()
         }
-    }, [user])
+    }, [user, setShowUserLogin])
+
+    if (!user) return <div className="min-h-screen flex items-center justify-center font-outfit text-slate-500">Authenticating...</div>;
 
     return (
         <div className='py-12 space-y-12'>
@@ -61,7 +67,7 @@ const MyOrders = () => {
                             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-border pb-6">
                                 <div>
                                     <p className="text-xs text-text-muted font-bold uppercase tracking-wider">ORDER ID</p>
-                                    <p className="font-outfit font-bold text-lg">#{order._id.slice(-8).toUpperCase()}</p>
+                                    <p className="font-outfit font-bold text-lg">#{order._id.toString().slice(-8).toUpperCase()}</p>
                                 </div>
                                 <div className="flex items-center gap-4">
                                     <span className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest ${getStatusColor(order.status)}`}>
@@ -104,7 +110,26 @@ const MyOrders = () => {
                                     <p className="text-sm text-text-muted font-medium">Total Amount:</p>
                                     <p className="text-2xl font-bold font-outfit text-primary">₹{order.pricing.totalAmount.toFixed(2)}</p>
                                 </div>
-                                <div className="flex items-center gap-3 w-full md:w-auto">
+                                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                                    {!order.payment.isPaid && (order.status === 'received' || order.status === 'failed') && (
+                                        <button
+                                            onClick={async () => {
+                                                try {
+                                                    const { data } = await axios.post(`/api/order/payment-link/${order._id}`);
+                                                    if (data.success) {
+                                                        window.open(data.paymentUrl, '_blank');
+                                                    } else {
+                                                        toast.error(data.message);
+                                                    }
+                                                } catch (err) {
+                                                    toast.error("Failed to generate payment link");
+                                                }
+                                            }}
+                                            className="btn-primary flex-1 md:flex-none py-3 px-6 text-sm bg-orange-600"
+                                        >
+                                            Pay Now 💳
+                                        </button>
+                                    )}
                                     <button className="btn-outline flex-1 md:flex-none py-3 px-6 text-sm">Download Invoice</button>
                                     <button onClick={() => trackOnWA(order)} className="btn-primary flex-1 md:flex-none py-3 px-6 text-sm flex items-center justify-center gap-2">
                                         <span>Track on WA</span>

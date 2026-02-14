@@ -7,20 +7,32 @@ export const sellerLogin = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        if (password === process.env.SELLER_PASSWORD && email === process.env.SELLER_EMAIL) {
-            const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: '7d' });
+        // Find user by email (or phone/name if preferred, but email/staffId is standard)
+        const user = await User.findOne({
+            $or: [{ email: email }, { name: email }],
+            role: { $in: ['admin', 'billing_manager'] }
+        });
 
-            res.cookie('sellerToken', token, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-                maxAge: 7 * 24 * 60 * 60 * 1000,
-            });
-
-            return res.json({ success: true, message: "Logged In" });
-        } else {
-            return res.json({ success: false, message: "Invalid Credentials" });
+        if (!user) {
+            return res.json({ success: false, message: "Staff account not found" });
         }
+
+        // Simple password check (Note: In production use bcrypt.compare)
+        if (user.password !== password) {
+            return res.json({ success: false, message: "Invalid credentials" });
+        }
+
+        const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
+
+        res.cookie('sellerToken', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+
+        return res.json({ success: true, message: "Logged In", role: user.role });
+
     } catch (error) {
         console.log(error.message);
         res.json({ success: false, message: error.message });
@@ -30,7 +42,7 @@ export const sellerLogin = async (req, res) => {
 // Seller isAuth : /api/seller/is-auth
 export const isSellerAuth = async (req, res) => {
     try {
-        return res.json({ success: true })
+        return res.json({ success: true, role: req.sellerRole })
     } catch (error) {
         console.log(error.message);
         res.json({ success: false, message: error.message });
@@ -78,18 +90,25 @@ export const getSellerAnalytics = async (req, res) => {
             }
         });
 
-        // Top Services (Simplified from order options)
+        // Top Services (More comprehensive breakdown)
         const servicesStats = {
             'B/W Printing': orders.filter(o => o.printOptions.mode === 'B/W').length,
             'Color Printing': orders.filter(o => o.printOptions.mode === 'Color').length,
             'Binding': orders.filter(o => o.printOptions.binding !== 'None').length,
+            'POS Services': orders.filter(o => o.files.some(f => f.fileType === 'POS Service')).length
         };
 
         const topServices = Object.keys(servicesStats).map(name => ({
             name,
             count: servicesStats[name],
-            revenue: 0, // Simplified for now
-            color: name === 'B/W Printing' ? 'blue' : (name === 'Color Printing' ? 'orange' : 'green')
+            revenue: orders.filter(o => {
+                if (name === 'POS Services') return o.files.some(f => f.fileType === 'POS Service');
+                if (name === 'B/W Printing') return o.printOptions.mode === 'B/W' && !o.files.some(f => f.fileType === 'POS Service');
+                if (name === 'Color Printing') return o.printOptions.mode === 'Color' && !o.files.some(f => f.fileType === 'POS Service');
+                if (name === 'Binding') return o.printOptions.binding !== 'None' && !o.files.some(f => f.fileType === 'POS Service');
+                return false;
+            }).reduce((acc, o) => acc + (o.pricing.totalAmount || 0), 0),
+            color: name === 'B/W Printing' ? 'blue' : (name === 'Color Printing' ? 'orange' : (name === 'Binding' ? 'green' : 'purple'))
         })).sort((a, b) => b.count - a.count);
 
         return res.json({
@@ -99,6 +118,8 @@ export const getSellerAnalytics = async (req, res) => {
                 totalRevenue,
                 avgOrderValue,
                 totalUsers: usersCount,
+                posOrders: orders.filter(o => o.files.some(f => f.fileType === 'POS Service')).length,
+                onlineOrders: orders.filter(o => !o.files.some(f => f.fileType === 'POS Service')).length,
                 weeklyStats,
                 topServices
             }

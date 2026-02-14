@@ -47,26 +47,30 @@ const Analytics = () => {
             </div>
 
             {/* Key Metrics */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                 <div className="bg-white p-5 rounded-xl border border-border space-y-1 shadow-sm">
-                    <p className="text-xs text-text-muted font-bold uppercase tracking-wider">Total Orders</p>
-                    <p className="text-3xl font-bold font-outfit text-primary">{stats.totalOrders}</p>
-                    <p className="text-[10px] text-text-muted font-medium">Lifetime orders</p>
+                    <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Total Orders</p>
+                    <p className="text-2xl font-bold font-outfit text-primary">{stats.totalOrders}</p>
                 </div>
                 <div className="bg-white p-5 rounded-xl border border-border space-y-1 shadow-sm">
-                    <p className="text-xs text-text-muted font-bold uppercase tracking-wider">Total Revenue</p>
-                    <p className="text-3xl font-bold font-outfit text-green-600">₹{stats.totalRevenue.toLocaleString()}</p>
-                    <p className="text-[10px] text-text-muted font-medium">Lifetime revenue</p>
+                    <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Total Revenue</p>
+                    <p className="text-2xl font-bold font-outfit text-green-600">₹{stats.totalRevenue.toLocaleString()}</p>
                 </div>
                 <div className="bg-white p-5 rounded-xl border border-border space-y-1 shadow-sm">
-                    <p className="text-xs text-text-muted font-bold uppercase tracking-wider">Avg. Order</p>
-                    <p className="text-3xl font-bold font-outfit text-orange-600">₹{stats.avgOrderValue}</p>
-                    <p className="text-[10px] text-text-muted font-medium">Per order average</p>
+                    <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider">POS Sales</p>
+                    <p className="text-2xl font-bold font-outfit text-purple-600">{stats.posOrders}</p>
                 </div>
                 <div className="bg-white p-5 rounded-xl border border-border space-y-1 shadow-sm">
-                    <p className="text-xs text-text-muted font-bold uppercase tracking-wider">Customers</p>
-                    <p className="text-3xl font-bold font-outfit text-purple-600">{stats.totalUsers}</p>
-                    <p className="text-[10px] text-text-muted font-medium">Registered users</p>
+                    <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Online Orders</p>
+                    <p className="text-2xl font-bold font-outfit text-blue-600">{stats.onlineOrders}</p>
+                </div>
+                <div className="bg-white p-5 rounded-xl border border-border space-y-1 shadow-sm">
+                    <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Avg. Order</p>
+                    <p className="text-2xl font-bold font-outfit text-orange-600">₹{stats.avgOrderValue}</p>
+                </div>
+                <div className="bg-white p-5 rounded-xl border border-border space-y-1 shadow-sm">
+                    <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Customers</p>
+                    <p className="text-2xl font-bold font-outfit text-indigo-600">{stats.totalUsers}</p>
                 </div>
             </div>
 
@@ -108,7 +112,8 @@ const Analytics = () => {
                                     <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
                                         <div
                                             className={`h-full rounded-full transition-all duration-1000 ${service.color === 'blue' ? 'bg-blue-500' :
-                                                    service.color === 'orange' ? 'bg-orange-500' : 'bg-green-500'
+                                                service.color === 'orange' ? 'bg-orange-500' :
+                                                    service.color === 'purple' ? 'bg-purple-500' : 'bg-green-500'
                                                 }`}
                                             style={{ width: `${percentage}%` }}
                                         ></div>

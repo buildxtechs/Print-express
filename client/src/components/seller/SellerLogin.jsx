@@ -41,19 +41,16 @@ const SellerLogin = () => {
                 <div className="w-full space-y-1">
                     <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">Username</label>
                     <input onChange={(e) => setEmail(e.target.value)} value={email}
-                        type="text" placeholder="Admin"
+                        type="text" placeholder="Enter Username"
                         className="input-field" required />
                 </div>
                 <div className="w-full space-y-1">
                     <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">Password</label>
                     <input onChange={(e) => setPassword(e.target.value)} value={password}
-                        type="password" placeholder="Enter your password"
+                        type="password" placeholder="Enter Password"
                         className="input-field" required />
                 </div>
                 <button className="btn-primary w-full py-3 text-base">Login to Dashboard</button>
-                <p className="text-xs text-text-muted text-center w-full">
-                    Default: Admin / Anbu@24
-                </p>
             </div>
         </form>
     )

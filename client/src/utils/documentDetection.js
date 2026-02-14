@@ -14,7 +14,8 @@ export const detectDocument = async (file) => {
         subType: null,
         pageCount: 0,
         isValid: false,
-        error: null
+        error: null,
+        previewURL: null
     };
 
     try {
@@ -46,6 +47,7 @@ export const detectDocument = async (file) => {
             result.type = 'Image';
             result.pageCount = 1;
             result.isValid = true;
+            result.previewURL = URL.createObjectURL(file);
 
             // Detect if it might be an ID card based on aspect ratio
             const img = await createImageBitmap(file);
@@ -58,9 +60,13 @@ export const detectDocument = async (file) => {
                 result.subType = 'Photo/Image';
             }
         }
+        // Other Files (Support "All Files")
         else {
-            result.isValid = false;
-            result.error = 'Unsupported file type. Please upload PDF, Image, or ID card.';
+            result.type = 'Other';
+            result.subType = fileExtension.toUpperCase();
+            result.pageCount = 1; // Default to 1 for unknown types or ask user
+            result.isValid = true;
+            // For other files, we might not know the page count accurately without specific parsers
         }
     } catch (error) {
         result.isValid = false;

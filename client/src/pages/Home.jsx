@@ -2,13 +2,26 @@ import React from 'react'
 import MainBanner from '../components/MainBanner'
 import Categories from '../components/Categories'
 import BottomBanner from '../components/BottomBanner'
+import DeliveryEstimator from '../components/DeliveryEstimator'
+import PricingTable from '../components/PricingTable'
+import PrintOptions from '../components/PrintOptions'
+import ScrollingBanner from '../components/ScrollingBanner'
 
 const Home = () => {
   return (
-    <div className='mt-10 space-y-24'>
-      <MainBanner />
-      <Categories />
-      <BottomBanner />
+    <div className='mt-6 space-y-24 pb-20'>
+      <div className="max-w-7xl mx-auto px-4 md:px-8">
+        <MainBanner />
+      </div>
+
+      <ScrollingBanner />
+
+      <div className="max-w-7xl mx-auto px-4 md:px-8 space-y-24">
+
+
+        <DeliveryEstimator />
+
+      </div>
     </div>
   )
 }

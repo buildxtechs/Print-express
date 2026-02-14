@@ -29,14 +29,17 @@ import AdminWallet from './pages/seller/AdminWallet';
 import ShopSettings from './pages/seller/ShopSettings';
 import AdminCoupons from './pages/seller/AdminCoupons';
 import DeliveryZones from './pages/seller/DeliveryZones';
+import BillingDashboard from './pages/seller/BillingDashboard';
+import FollowUps from './pages/seller/FollowUps';
 import Loading from './components/Loading';
+import ManageBanners from './pages/seller/ManageBanners';
 import ReferAndEarn from './pages/ReferAndEarn';
 import Vouchers from './pages/Vouchers';
 
 const App = () => {
 
   const isSellerPath = useLocation().pathname.includes("seller");
-  const { showUserLogin, isSeller } = useAppContext()
+  const { showUserLogin, isSeller, sellerRole } = useAppContext()
 
   return (
     <div className='text-default min-h-screen text-gray-700 bg-white'>
@@ -61,8 +64,9 @@ const App = () => {
           <Route path='/profile' element={<Profile />} />
           <Route path='/loader' element={<Loading />} />
           <Route path='seller' element={isSeller ? <SellerLayout /> : <SellerLogin />}>
-            <Route index element={<Dashboard />} />
-            <Route path='dashboard' element={<Dashboard />} />
+            <Route index element={sellerRole === 'billing_manager' ? <BillingDashboard /> : <Dashboard />} />
+            <Route path='dashboard' element={sellerRole === 'billing_manager' ? <BillingDashboard /> : <Dashboard />} />
+            <Route path='billing-dashboard' element={<BillingDashboard />} />
             <Route path='pos' element={<POSMode />} />
             <Route path='orders' element={<Orders />} />
             <Route path='services' element={<ManageServices />} />
@@ -73,6 +77,8 @@ const App = () => {
             <Route path='analytics' element={<Analytics />} />
             <Route path='wallet' element={<AdminWallet />} />
             <Route path='coupons' element={<AdminCoupons />} />
+            <Route path='followups' element={<FollowUps />} />
+            <Route path='banners' element={<ManageBanners />} />
           </Route>
         </Routes>
       </div>

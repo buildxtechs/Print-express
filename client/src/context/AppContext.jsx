@@ -16,8 +16,10 @@ export const AppContextProvider = ({ children }) => {
     const navigate = useNavigate();
     const [user, setUser] = useState(null)
     const [isSeller, setIsSeller] = useState(false)
+    const [sellerRole, setSellerRole] = useState(null)
     const [showUserLogin, setShowUserLogin] = useState(false)
     const [products, setProducts] = useState([])
+    const [services, setServices] = useState([])
 
     const [cartItems, setCartItems] = useState({})
     const [searchQuery, setSearchQuery] = useState({})
@@ -29,6 +31,7 @@ export const AppContextProvider = ({ children }) => {
             const { data } = await axios.get('/api/seller/is-auth');
             if (data.success) {
                 setIsSeller(true)
+                setSellerRole(data.role)
             }
         } catch (error) {
             setIsSeller(false)
@@ -66,6 +69,18 @@ export const AppContextProvider = ({ children }) => {
             const { data } = await axios.get('/api/product/list')
             if (data.success) {
                 setProducts(data.products)
+            }
+        } catch (error) {
+            console.error(error.message)
+        }
+    }
+
+    // Fetch All Services
+    const fetchServices = async () => {
+        try {
+            const { data } = await axios.get('/api/services')
+            if (data.success) {
+                setServices(data.services)
             }
         } catch (error) {
             console.error(error.message)
@@ -116,11 +131,12 @@ export const AppContextProvider = ({ children }) => {
         fetchSeller()
         fetchPricing()
         fetchProducts()
+        fetchServices()
     }, [])
 
     const value = {
-        navigate, user, setUser, setIsSeller, isSeller,
-        showUserLogin, setShowUserLogin, products, currency, addToCart, updateCartItem, removeFromCart, cartItems, searchQuery, setSearchQuery, getCartAmount, getCartCount, axios, fetchProducts, setCartItems, pricingRules
+        navigate, user, setUser, setIsSeller, isSeller, sellerRole, setSellerRole,
+        showUserLogin, setShowUserLogin, products, services, currency, addToCart, updateCartItem, removeFromCart, cartItems, searchQuery, setSearchQuery, getCartAmount, getCartCount, axios, fetchProducts, fetchServices, setCartItems, pricingRules
     }
 
     return <AppContext.Provider value={value}>

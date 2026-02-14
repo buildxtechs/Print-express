@@ -1,0 +1,70 @@
+# PrintExpress Technical Stack & Hosting Plan
+
+This document outlines the current technical architecture of the PrintExpress application and provides a strategic plan for hosting it on Hostinger.
+
+## Technical Stack Summary
+
+### Frontend (Client)
+- **Framework**: React 19 (Modern, component-based UI)
+- **Build Tool**: Vite (Fast development and optimized builds)
+- **Styling**: Tailwind CSS 4 (Utility-first CSS framework)
+- **Routing**: React Router DOM (Single Page Application routing)
+- **API Client**: Axios (Promise-based HTTP requests)
+- **Utilities**: 
+  - `pdf-lib`: For PDF document generation and modification.
+  - `react-hot-toast`: For smooth, non-intrusive notifications.
+
+### Backend (Server)
+- **Runtime**: Node.js (High-performance Javascript runtime)
+- **Framework**: Express.js (Minimal and flexible web application framework)
+- **Database ODM**: Mongoose (Elegant MongoDB object modeling)
+- **Authentication**: JWT (JSON Web Tokens) & Bcryptjs (Password hashing)
+- **File Handling**: Multer (Middleware for handling `multipart/form-data`)
+- **Payment Gateway**: Stripe (Secure payment processing)
+
+### Infrastructure & Services
+- **Database**: MongoDB (Atlas Cloud recommended)
+- **Cloud Storage**: Cloudinary (Image and file asset management)
+- **Email/Notifications**: Configurable via environment variables.
+
+---
+
+## Hosting strategy: Hostinger
+
+### Recommended Hosting Plan: **VPS Hosting**
+Since PrintExpress is a Node.js-based application (MERN stack), it requires a server environment where you can run long-running processes (Node.js/Express). 
+> [!IMPORTANT]
+> Standard Shared Hosting on Hostinger is primarily optimized for PHP and may not provide the necessary environment for a robust Node.js application. **VPS Hosting** gives you full control and is the best fit for this stack.
+
+### Deployment Steps on Hostinger VPS
+
+#### 1. Server Environment Setup
+- Install **Node.js** (LTS version).
+- Install **PM2** (Process Manager) to keep the backend running 24/7.
+- Install **Nginx** to act as a reverse proxy and serve frontend assets.
+
+#### 2. Frontend Build
+- Run `npm run build` in the `client` directory to generate the optimized `dist` folder.
+- Point Nginx to serve the `dist` folder for the root domain.
+
+#### 3. Backend Deployment
+- Copy the `server` folder to the VPS.
+- Install dependencies with `npm install --production`.
+- Use PM2 to start the server: `pm2 start server.js --name printexpress-api`.
+
+#### 4. Environment Configuration
+- Create a `.env` file on the VPS with your production credentials (MONGODB_URI, CLOUDINARY_URL, STRIPE_SECRET_KEY, etc.).
+
+#### 5. SSL & Security
+- Use **Certbot (Let's Encrypt)** to set up free SSL certificates for HTTPS.
+- Configure Nginx to route `/api` requests to the Node.js backend (port 4000).
+
+---
+
+## Verification Plan
+
+### Manual Verification
+- **Frontend Access**: Verify the site loads via the domain name.
+- **API Connectivity**: Test basic login/signup and data fetching to ensure the backend is connected to MongoDB Atlas.
+- **Image Uploads**: Upload a sample image to verify Cloudinary integration.
+- **Payments**: Use Stripe Test Mode to verify checkout flows.

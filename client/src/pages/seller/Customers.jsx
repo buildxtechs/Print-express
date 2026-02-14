@@ -10,28 +10,13 @@ const Customers = () => {
     const fetchCustomers = async () => {
         try {
             setLoading(true);
-            // Try to fetch from API, fallback to demo data
-            try {
-                const { data } = await axios.get('/api/user/all');
-                if (data.success) {
-                    setCustomers(data.users || []);
-                    setLoading(false);
-                    return;
-                }
-            } catch (e) {
-                // API not available, use demo data
+            const { data } = await axios.get('/api/user/all');
+            if (data.success) {
+                setCustomers(data.users || []);
             }
-
-            // Demo data for display
-            setCustomers([
-                { _id: '1', name: 'Rajesh Kumar', phone: '+91 9123456789', email: 'rajesh@example.com', city: 'Mumbai', orders: 5, totalSpent: 1250, createdAt: '2026-01-15' },
-                { _id: '2', name: 'Priya Sharma', phone: '+91 9234567890', email: 'priya@example.com', city: 'Delhi', orders: 3, totalSpent: 780, createdAt: '2026-01-20' },
-                { _id: '3', name: 'Amit Patel', phone: '+91 9345678901', email: 'amit@example.com', city: 'Bangalore', orders: 8, totalSpent: 2340, createdAt: '2026-01-10' },
-                { _id: '4', name: 'Sneha Reddy', phone: '+91 9456789012', email: 'sneha@example.com', city: 'Hyderabad', orders: 2, totalSpent: 460, createdAt: '2026-02-01' },
-                { _id: '5', name: 'Vikram Singh', phone: '+91 9567890123', email: 'vikram@example.com', city: 'Chennai', orders: 12, totalSpent: 3670, createdAt: '2025-12-20' },
-            ]);
-            setLoading(false);
         } catch (error) {
+            console.error("Failed to fetch customers:", error.message);
+        } finally {
             setLoading(false);
         }
     };

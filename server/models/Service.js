@@ -5,6 +5,8 @@ const serviceSchema = new mongoose.Schema({
     icon: { type: String },
     description: { type: String },
     price: { type: Number },
+    priceSingleSide: { type: Number },
+    priceDoubleSide: { type: Number },
     priceRange: { type: String },
     category: { type: String, enum: ['Printing', 'Binding', 'Lamination', 'ID Card', 'Other'], default: 'Printing' },
     status: { type: String, enum: ['Active', 'Inactive'], default: 'Active' },

@@ -1,10 +1,34 @@
-import Order from "../models/Order.js";
-import User from "../models/User.js";
-import Pricing from "../models/Pricing.js";
-import Wallet from "../models/Wallet.js";
-import Coupon from "../models/Coupon.js";
-import { v2 as cloudinary } from "cloudinary";
-import stripe from "stripe";
+import Order from '../models/Order.js';
+import User from '../models/User.js';
+import Wallet from '../models/Wallet.js';
+import Pricing from '../models/Pricing.js';
+import Service from '../models/Service.js';
+import Coupon from '../models/Coupon.js';
+// ... existing imports ...
+import { v2 as cloudinary } from 'cloudinary';
+import PDFDocument from 'pdfkit';
+import stripeModule from 'stripe';
+
+const stripe = new stripeModule(process.env.STRIPE_SECRET_KEY);
+
+// Helper for Custom Page Counting
+const calculateCustomPageCount = (range) => {
+    if (!range) return 0;
+    const parts = range.split(',').map(p => p.trim());
+    let count = 0;
+    parts.forEach(part => {
+        if (part.includes('-')) {
+            const [start, end] = part.split('-').map(Number);
+            if (!isNaN(start) && !isNaN(end) && end >= start) {
+                count += (end - start + 1);
+            }
+        } else {
+            const num = Number(part);
+            if (!isNaN(num) && num > 0) count += 1;
+        }
+    });
+    return count;
+};
 
 // Place Print Order : /api/order/print
 export const placePrintOrder = async (req, res) => {
@@ -32,32 +56,68 @@ export const placePrintOrder = async (req, res) => {
             })
         );
 
-        // 2. Fetch Pricing Rules (for server-side validation/reference)
-        const pricingData = await Pricing.findOne({ type: 'printing_rules' });
+        // 2. Fetch Pricing Rules and Services
+        const [pricingData, services] = await Promise.all([
+            Pricing.findOne({ type: 'printing_rules' }),
+            Service.find({})
+        ]);
+
         const rules = pricingData ? pricingData.rules : {
             printing: { bw: { single: 2, double: 3 }, color: { single: 10, double: 15 } },
-            additional: { binding: 50, hard_binding: 200, handling_fee: 10 }
+            additional: { binding: 50, hard_binding: 200, handling_fee: 10 },
+            delivery_tiers: { tier_a: 40, tier_b: 60, tier_c: 80, tier_d: 150 }
         };
 
         // 3. Calculate Pricing (Server-side validation)
-        let printingCharge = 0;
-        let bindingCharge = 0;
-        let totalPages = uploadedFiles.reduce((acc, f) => acc + f.pageCount, 0);
+        const docPages = uploadedFiles.reduce((acc, f) => acc + f.pageCount, 0);
+        const totalPages = printOptions.pageRangeType === 'Custom'
+            ? calculateCustomPageCount(printOptions.customPages)
+            : docPages;
 
         const isColor = printOptions.mode === 'Color';
         const isDouble = printOptions.side === 'Double';
+        const isA3 = printOptions.paperSize === 'A3';
 
-        const rate = isColor
-            ? (isDouble ? rules.printing.color.double : rules.printing.color.single)
-            : (isDouble ? rules.printing.bw.double : rules.printing.bw.single);
+        // Dynamic Pricing Integration (Backend)
+        const serviceName = isColor ? "Color A4 Print" : "B/W A4 Print";
+        const matchingService = services.find(s => s.name === serviceName);
 
-        printingCharge = totalPages * (rate || (isColor ? 10 : 2)) * (printOptions.copies || 1);
+        let rate;
+        if (matchingService) {
+            rate = Number(matchingService.price);
+            if (isDouble) {
+                const multiplier = isColor
+                    ? (rules.printing.color.double / rules.printing.color.single)
+                    : (rules.printing.bw.double / rules.printing.bw.single);
+                rate *= multiplier;
+            }
+        } else {
+            rate = isColor
+                ? (isDouble ? rules.printing.color.double : rules.printing.color.single)
+                : (isDouble ? rules.printing.bw.double : rules.printing.bw.single);
+        }
 
+        // A3 Multiplier (2x)
+        if (isA3) rate *= 2;
+
+        let printingCharge = totalPages * (rate || (isColor ? 10 : 2)) * (printOptions.copies || 1);
+        // Note: isDouble logic is already included in rate if matchingService exists.
+        // If not matchingService, the ternary above handles it.
+
+        let bindingCharge = 0;
         if (printOptions.binding === 'Spiral') bindingCharge = rules.additional.binding || 50;
-        if (printOptions.binding === 'Staple') bindingCharge = 10; // Staple is usually cheap/fixed
-        if (printOptions.binding === 'Hard') bindingCharge = rules.additional.hard_binding || 200;
+        else if (printOptions.binding === 'Staple') bindingCharge = 10;
+        else if (printOptions.binding === 'Hard') bindingCharge = rules.additional.hard_binding || 200;
+        else if (printOptions.binding === 'Chart') bindingCharge = rules.additional.chart_binding || 150;
 
-        const deliveryCharge = fulfillment.method === 'pickup' ? 0 : 40; // Fixed delivery for now or from shop settings
+        let deliveryCharge = 0;
+        if (fulfillment.method === 'delivery') {
+            const tiers = rules.delivery_tiers || { tier_a: 40, tier_b: 60, tier_c: 80, tier_d: 150 };
+            deliveryCharge = tiers.tier_a;
+            if (docPages >= 1000) deliveryCharge = tiers.tier_d;
+            else if (docPages > 500) deliveryCharge = tiers.tier_c;
+            else if (docPages > 200) deliveryCharge = tiers.tier_b;
+        }
 
         // Final Total calculated server-side to prevent tampering
         const subtotal = printingCharge + bindingCharge + deliveryCharge;
@@ -73,7 +133,7 @@ export const placePrintOrder = async (req, res) => {
             wallet.transactions.push({
                 type: 'debit',
                 amount: walletUsed,
-                description: `Used for order #${userId.slice(-6)}`,
+                description: `Used for order #${String(userId).slice(-6)}`,
                 addedBy: 'user'
             });
             await wallet.save();
@@ -111,8 +171,12 @@ export const placePrintOrder = async (req, res) => {
         return res.json({ success: true, message: "Order Placed Successfully", orderId: order._id });
 
     } catch (error) {
-        console.log(error.message);
-        return res.json({ success: false, message: error.message });
+        console.log("--- ERROR PLACING ORDER ---");
+        console.log("Error Message:", error.message);
+        console.log("Error Stack:", error.stack);
+
+        // Return a more descriptive error if possible
+        return res.json({ success: false, message: error.message || "Failed to place order" });
     }
 }
 
@@ -219,6 +283,149 @@ export const getAllOrders = async (req, res) => {
     }
 }
 
+// Update Order and Recalculate Amount (Admin) : /api/order/edit/:orderId
+export const updateOrderAndRecalculate = async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        const { printOptions } = req.body;
+
+        const order = await Order.findById(orderId);
+        if (!order) return res.json({ success: false, message: "Order not found" });
+
+        // Fetch Pricing Rules
+        const pricingData = await Pricing.findOne({ type: 'printing_rules' });
+        const rules = pricingData ? pricingData.rules : {
+            printing: { bw: { single: 2, double: 3 }, color: { single: 10, double: 15 } },
+            additional: { binding: 50, hard_binding: 200, handling_fee: 10 }
+        };
+
+        // Recalculate
+        const docPages = order.files.reduce((acc, f) => acc + (f.pageCount || 0), 0);
+        const totalPages = printOptions.pageRangeType === 'Custom'
+            ? calculateCustomPageCount(printOptions.customPages)
+            : docPages;
+
+        const isColor = printOptions.mode === 'Color';
+        const isDouble = printOptions.side === 'Double';
+
+        const rate = isColor
+            ? (isDouble ? rules.printing.color.double : rules.printing.color.single)
+            : (isDouble ? rules.printing.bw.double : rules.printing.bw.single);
+
+        let printingCharge = totalPages * (rate || (isColor ? 10 : 2)) * (printOptions.copies || 1);
+        if (isDouble) printingCharge = printingCharge * 0.5;
+
+        let bindingCharge = 0;
+        if (printOptions.binding === 'Spiral') bindingCharge = rules.additional.binding || 50;
+        if (printOptions.binding === 'Staple') bindingCharge = 10;
+        if (printOptions.binding === 'Hard') bindingCharge = rules.additional.hard_binding || 200;
+
+        const subtotal = printingCharge + bindingCharge + (order.pricing.deliveryCharge || 0);
+        const finalAmount = Math.max(0, subtotal - (order.pricing.couponDiscount || 0) - (order.pricing.walletUsed || 0));
+
+        order.printOptions = { ...order.printOptions, ...printOptions };
+        order.pricing = {
+            ...order.pricing,
+            printingCharge,
+            bindingCharge,
+            totalAmount: finalAmount
+        };
+        order.payment.isPaid = false; // Reset payment status on modification if amount changes
+
+        await order.save();
+
+        res.json({ success: true, message: "Order updated and recalculated", order });
+    } catch (error) {
+        res.json({ success: false, message: error.message });
+    }
+}
+
+// Generate Stripe Payment Link for Order Payment : /api/order/payment-link/:orderId
+export const generatePaymentLink = async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        const order = await Order.findById(orderId).populate('userId');
+        if (!order) return res.json({ success: false, message: "Order not found" });
+
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            line_items: order.files.map(file => ({
+                price_data: {
+                    currency: 'inr',
+                    product_data: {
+                        name: `Print Order: ${file.originalName.slice(0, 20)}`,
+                        description: `Printing ${order.printOptions.mode} | ${order.printOptions.side} | ${order.printOptions.binding}`,
+                    },
+                    unit_amount: Math.round(order.pricing.totalAmount * 100), // Note: This is hacky for multi-file, ideally split prices
+                },
+                quantity: 1,
+            })),
+            mode: 'payment',
+            success_url: `${process.env.CLIENT_URL}/my-orders?payment=success`,
+            cancel_url: `${process.env.CLIENT_URL}/my-orders?payment=failed`,
+            customer_email: order.userId?.email,
+            metadata: { orderId: order._id.toString() }
+        });
+
+        res.json({ success: true, paymentUrl: session.url });
+    } catch (error) {
+        res.json({ success: false, message: error.message });
+    }
+}
+
+// Generate Thermal Bill PDF : /api/order/thermal-bill/:orderId
+export const generateThermalBillPDF = async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        const order = await Order.findById(orderId).populate('userId');
+        if (!order) return res.json({ success: false, message: "Order not found" });
+
+        const doc = new PDFDocument({ size: [226, 600], margins: { top: 10, left: 10, right: 10, bottom: 10 } }); // 80mm wide (approx 226pt)
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename=bill_${orderId}.pdf`);
+
+        doc.pipe(res);
+
+        // Content
+        doc.fontSize(12).text('PRINT EXPRESS', { align: 'center' });
+        doc.fontSize(8).text('Your One-Stop Print Shop', { align: 'center' });
+        doc.moveDown();
+        doc.text('-----------------------------------', { align: 'center' });
+        doc.text(`Order ID: #${order._id.toString().slice(-8)}`);
+        doc.text(`Date: ${new Date(order.createdAt).toLocaleString()}`);
+        doc.text(`Customer: ${order.userId?.name || 'Walk-in'}`);
+        doc.text(`Phone: ${order.deliveryDetails?.phone || 'N/A'}`);
+        doc.text('-----------------------------------');
+        doc.moveDown();
+
+        doc.text('Items:', { underline: true });
+        order.files.forEach(file => {
+            doc.text(`${file.originalName.slice(0, 20)}... x ${order.printOptions.copies}`);
+        });
+        doc.moveDown();
+
+        doc.text(`Mode: ${order.printOptions.mode}`);
+        doc.text(`Side: ${order.printOptions.side}`);
+        doc.text(`Binding: ${order.printOptions.binding}`);
+        doc.moveDown();
+
+        doc.text('-----------------------------------');
+        doc.text(`Subtotal: ₹${(order.pricing.printingCharge + order.pricing.bindingCharge).toFixed(2)}`);
+        doc.text(`Delivery: ₹${order.pricing.deliveryCharge.toFixed(2)}`);
+        if (order.pricing.couponDiscount > 0) doc.text(`Discount: -₹${order.pricing.couponDiscount.toFixed(2)}`);
+        if (order.pricing.walletUsed > 0) doc.text(`Wallet: -₹${order.pricing.walletUsed.toFixed(2)}`);
+        doc.fontSize(10).text(`TOTAL: ₹${order.pricing.totalAmount.toFixed(2)}`, { bold: true });
+        doc.text('-----------------------------------');
+        doc.moveDown();
+        doc.fontSize(8).text('Thank you for your business!', { align: 'center' });
+
+        doc.end();
+    } catch (error) {
+        res.json({ success: false, message: error.message });
+    }
+}
+
 // Update Order Status (Admin) : /api/order/update-status
 export const updateOrderStatus = async (req, res) => {
     try {
@@ -227,7 +434,7 @@ export const updateOrderStatus = async (req, res) => {
 
         // Trigger WhatsApp notification logic
         if (order && order.userId && order.userId.phone) {
-            console.log(`[WhatsApp Notification] To: ${order.userId.phone}, Message: Your order #${order._id.slice(-8)} is now ${status}.`);
+            console.log(`[WhatsApp Notification] To: ${order.userId.phone}, Message: Your order #${order._id.toString().slice(-8)} is now ${status}.`);
             // TODO: In production, call WhatsApp Cloud API here
         }
 
@@ -237,7 +444,62 @@ export const updateOrderStatus = async (req, res) => {
     }
 }
 
-// Stripe Webhooks Placeholder
+// Stripe Webhooks Handler : /api/order/webhook
 export const stripeWebhooks = async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    let event;
+
+    try {
+        event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    } catch (err) {
+        console.error('Webhook Error:', err.message);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    if (event.type === 'checkout.session.completed') {
+        const session = event.data.object;
+        const metadata = session.metadata;
+
+        if (metadata.type === 'recharge') {
+            // Handle Wallet Recharge
+            const { userId, amount } = metadata;
+            const wallet = await Wallet.findOne({ userId });
+            if (wallet) {
+                wallet.balance += parseFloat(amount);
+                wallet.transactions.push({
+                    type: 'credit',
+                    amount: parseFloat(amount),
+                    description: 'Wallet Recharge via Stripe',
+                    addedBy: 'user'
+                });
+                await wallet.save();
+                await User.findByIdAndUpdate(userId, { walletBalance: wallet.balance });
+                console.log(`[Stripe Webhook] Recharged ₹${amount} for user ${userId}`);
+            }
+        } else if (metadata.orderId) {
+            // Handle Order Payment
+            const orderId = metadata.orderId;
+            const order = await Order.findById(orderId);
+            if (order) {
+                order.payment.isPaid = true;
+                order.payment.transactionId = session.id;
+                await order.save();
+                console.log(`[Stripe Webhook] Payment successful for order ${orderId}`);
+            }
+        }
+    } else if (event.type === 'checkout.session.async_payment_failed' || event.type === 'checkout.session.expired') {
+        const session = event.data.object;
+        const metadata = session.metadata;
+
+        if (metadata.orderId) {
+            const order = await Order.findById(metadata.orderId);
+            if (order) {
+                order.status = 'failed';
+                await order.save();
+                console.log(`[Stripe Webhook] Payment failed or expired for order ${metadata.orderId}`);
+            }
+        }
+    }
+
     res.json({ received: true });
 }

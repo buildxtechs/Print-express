@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { useAppContext } from '../context/AppContext'
 import toast from 'react-hot-toast'
 import PrintExpressLogo from './PrintExpressLogo'
@@ -7,6 +7,7 @@ import PrintExpressLogo from './PrintExpressLogo'
 const Navbar = () => {
   const [open, setOpen] = React.useState(false)
   const { user, setUser, setShowUserLogin, navigate, axios } = useAppContext();
+  const location = useLocation();
   const menuRef = useRef(null);
 
   const logout = async () => {
@@ -57,8 +58,18 @@ const Navbar = () => {
         <NavLink to='/print' className={navLinkClass}>Print Online</NavLink>
         <NavLink to='/vouchers' className={navLinkClass}>Vouchers & Offers</NavLink>
         <NavLink to='/refer' className={navLinkClass}>Refer & Earn</NavLink>
-        <NavLink to='/my-orders' className={navLinkClass}>My Orders</NavLink>
-        <NavLink to='/profile' className={navLinkClass}>My Profile</NavLink>
+        <p
+          onClick={() => user ? navigate('/my-orders') : setShowUserLogin(true)}
+          className={`cursor-pointer pb-1 text-sm ${location.pathname === '/my-orders' ? 'text-primary font-semibold' : 'text-gray-700 font-medium hover:text-primary transition-colors'}`}
+        >
+          My Orders
+        </p>
+        <p
+          onClick={() => user ? navigate('/profile') : setShowUserLogin(true)}
+          className={`cursor-pointer pb-1 text-sm ${location.pathname === '/profile' ? 'text-primary font-semibold' : 'text-gray-700 font-medium hover:text-primary transition-colors'}`}
+        >
+          My Profile
+        </p>
       </div>
 
       {/* User Section & Mobile Toggle */}
@@ -130,12 +141,18 @@ const Navbar = () => {
           <NavLink to="/refer" onClick={() => setOpen(false)} className="w-full text-center py-2 hover:bg-blue-50 transition-colors">
             Refer & Earn
           </NavLink>
-          <NavLink to="/my-orders" onClick={() => setOpen(false)} className="w-full text-center py-2 hover:bg-blue-50 transition-colors">
+          <p
+            onClick={() => { setOpen(false); user ? navigate('/my-orders') : setShowUserLogin(true); }}
+            className="w-full text-center py-2 hover:bg-blue-50 transition-colors cursor-pointer"
+          >
             My Orders
-          </NavLink>
-          <NavLink to="/profile" onClick={() => setOpen(false)} className="w-full text-center py-2 hover:bg-blue-50 transition-colors">
+          </p>
+          <p
+            onClick={() => { setOpen(false); user ? navigate('/profile') : setShowUserLogin(true); }}
+            className="w-full text-center py-2 hover:bg-blue-50 transition-colors cursor-pointer"
+          >
             My Profile
-          </NavLink>
+          </p>
 
           {/* All India Badge in Mobile */}
           <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-50 to-green-50 rounded-full border border-orange-200 mt-1">

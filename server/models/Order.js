@@ -11,8 +11,10 @@ const orderSchema = new mongoose.Schema({
     printOptions: {
         mode: { type: String, enum: ['B/W', 'Color'] },
         side: { type: String, enum: ['Single', 'Double'] },
+        paperSize: { type: String, enum: ['A4', 'A3'], default: 'A4' },
         copies: Number,
-        binding: { type: String, enum: ['None', 'Spiral', 'Staple'] }
+        binding: { type: String, enum: ['None', 'Spiral', 'Staple', 'Hard', 'Chart'] },
+        bindingQuantity: { type: Number, default: 1 }
     },
     pricing: {
         printingCharge: Number,
@@ -36,7 +38,7 @@ const orderSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['received', 'printing', 'ready', 'delivered', 'picked_up', 'cancelled'],
+        enum: ['received', 'printing', 'ready', 'delivered', 'picked_up', 'cancelled', 'failed'],
         default: 'received'
     },
     payment: {
@@ -45,7 +47,12 @@ const orderSchema = new mongoose.Schema({
         transactionId: String
     },
     couponCode: { type: String },
-    whatsappSent: { type: Boolean, default: false }
+    whatsappSent: { type: Boolean, default: false },
+    trackingDetails: {
+        courierName: String,
+        trackingNumber: String,
+        updatedAt: Date
+    }
 }, { timestamps: true });
 
 const Order = mongoose.models.order || mongoose.model('order', orderSchema);

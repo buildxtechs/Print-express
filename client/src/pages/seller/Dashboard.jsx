@@ -49,6 +49,9 @@ const Dashboard = () => {
     const pendingOrders = orders.filter(o => o.status === 'received' || o.status === 'printing');
     const deliveredOrders = orders.filter(o => o.status === 'delivered');
 
+    const posOrdersCount = orders.filter(o => o.files.some(f => f.fileType === 'POS Service')).length;
+    const onlineOrdersCount = orders.length - posOrdersCount;
+
     if (loading) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -78,35 +81,35 @@ const Dashboard = () => {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-white p-5 rounded-2xl border border-border space-y-2 hover:shadow-lg transition-shadow">
                     <div className="flex items-center justify-between">
-                        <p className="text-xs text-text-muted font-semibold uppercase">Total Orders</p>
-                        <span className="text-2xl">📦</span>
-                    </div>
-                    <p className="text-3xl font-bold font-outfit text-primary">{orders.length}</p>
-                    <p className="text-xs text-blue-600">{todayOrders.length} today</p>
-                </div>
-                <div className="bg-white p-5 rounded-2xl border border-border space-y-2 hover:shadow-lg transition-shadow">
-                    <div className="flex items-center justify-between">
-                        <p className="text-xs text-text-muted font-semibold uppercase">Revenue</p>
+                        <p className="text-[10px] text-text-muted font-semibold uppercase">Total Revenue</p>
                         <span className="text-2xl">💰</span>
                     </div>
                     <p className="text-3xl font-bold font-outfit text-green-600">₹{totalRevenue.toLocaleString()}</p>
-                    <p className="text-xs text-green-600">Total earnings</p>
+                    <p className="text-xs text-text-muted">{orders.length} orders total</p>
                 </div>
                 <div className="bg-white p-5 rounded-2xl border border-border space-y-2 hover:shadow-lg transition-shadow">
                     <div className="flex items-center justify-between">
-                        <p className="text-xs text-text-muted font-semibold uppercase">Pending</p>
-                        <span className="text-2xl">⏳</span>
+                        <p className="text-[10px] text-text-muted font-semibold uppercase">Print Online</p>
+                        <span className="text-2xl">🌐</span>
                     </div>
-                    <p className="text-3xl font-bold font-outfit text-orange-600">{pendingOrders.length}</p>
-                    <p className="text-xs text-orange-600">Need action</p>
+                    <p className="text-3xl font-bold font-outfit text-primary">{onlineOrdersCount}</p>
+                    <p className="text-xs text-blue-600">{pendingOrders.length} pending</p>
                 </div>
                 <div className="bg-white p-5 rounded-2xl border border-border space-y-2 hover:shadow-lg transition-shadow">
                     <div className="flex items-center justify-between">
-                        <p className="text-xs text-text-muted font-semibold uppercase">Customers</p>
+                        <p className="text-[10px] text-text-muted font-semibold uppercase">POS Sales</p>
+                        <span className="text-2xl">📟</span>
+                    </div>
+                    <p className="text-3xl font-bold font-outfit text-purple-600">{posOrdersCount}</p>
+                    <p className="text-xs text-purple-600">Walk-in transactions</p>
+                </div>
+                <div className="bg-white p-5 rounded-2xl border border-border space-y-2 hover:shadow-lg transition-shadow">
+                    <div className="flex items-center justify-between">
+                        <p className="text-[10px] text-text-muted font-semibold uppercase">Customers</p>
                         <span className="text-2xl">👥</span>
                     </div>
-                    <p className="text-3xl font-bold font-outfit text-purple-600">{customers.length}</p>
-                    <p className="text-xs text-purple-600">Registered users</p>
+                    <p className="text-3xl font-bold font-outfit text-orange-600">{customers.length}</p>
+                    <p className="text-xs text-orange-600">Registered users</p>
                 </div>
             </div>
 

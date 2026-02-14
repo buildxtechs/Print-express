@@ -1,4 +1,5 @@
 import User from "../models/User.js";
+import Order from "../models/Order.js";
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
@@ -107,7 +108,19 @@ export const updateProfile = async (req, res) => {
         const userId = req.userId;
         const { name, email, address } = req.body;
 
-        // Validate email if provided
+        // Validate mandatory address fields if address is being updated
+        if (address) {
+            const requiredFields = ['line1', 'pincode', 'city', 'state'];
+            for (const field of requiredFields) {
+                if (!address[field]) {
+                    return res.json({ success: false, message: `Address field ${field} is mandatory` });
+                }
+            }
+            if (!/^\d{6}$/.test(address.pincode)) {
+                return res.json({ success: false, message: 'Invalid Pincode format (6 digits required)' });
+            }
+        }
+
         if (email) {
             const existingUser = await User.findOne({ email });
             if (existingUser && existingUser._id.toString() !== userId) {
@@ -133,8 +146,20 @@ export const updateProfile = async (req, res) => {
 // Get All Users (Admin) : /api/user/all
 export const getAllUsers = async (req, res) => {
     try {
-        const users = await User.find({}).sort({ createdAt: -1 });
-        return res.json({ success: true, users });
+        const users = await User.find({}).sort({ createdAt: -1 }).lean();
+        const orders = await Order.find({});
+
+        const usersWithStats = users.map(user => {
+            const userOrders = orders.filter(o => o.userId?.toString() === user._id.toString());
+            const totalSpent = userOrders.reduce((sum, o) => sum + (o.pricing?.totalAmount || 0), 0);
+            return {
+                ...user,
+                orders: userOrders.length,
+                totalSpent
+            };
+        });
+
+        return res.json({ success: true, users: usersWithStats });
     } catch (error) {
         console.log(error.message);
         res.json({ success: false, message: error.message });
