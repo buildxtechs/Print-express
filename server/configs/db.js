@@ -76,8 +76,10 @@ const connectDB = async () => {
         // ... (rest of connection logic)
         const uri = process.env.MONGODB_URI;
         if (!uri || uri.includes('abc:abc')) {
+            console.log('⚠️  MONGODB_URI is missing or default. Falling back to local MongoDB.');
             await mongoose.connect('mongodb://localhost:27017/print-express');
         } else {
+            console.log('ℹ️  connecting to remote MongoDB...');
             const cleanUri = uri.endsWith('/') ? uri.slice(0, -1) : uri;
 
             // Connection Options for better stability
