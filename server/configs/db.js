@@ -79,7 +79,14 @@ const connectDB = async () => {
             await mongoose.connect('mongodb://localhost:27017/print-express');
         } else {
             const cleanUri = uri.endsWith('/') ? uri.slice(0, -1) : uri;
-            await mongoose.connect(`${cleanUri}/print-express`);
+
+            // Connection Options for better stability
+            const options = {
+                serverSelectionTimeoutMS: 5000,
+                socketTimeoutMS: 45000,
+            };
+
+            await mongoose.connect(`${cleanUri}/print-express`, options);
         }
     } catch (error) {
         console.error('\n❌ Database Connection Error:', error.message);

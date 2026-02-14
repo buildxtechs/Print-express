@@ -36,9 +36,9 @@ export const verifyOtp = async (req, res) => {
 
         if (!phone || !otp) return res.json({ success: false, message: 'Phone and OTP are required' });
 
-        // DEMO MODE: Accept any 6-digit OTP
-        if (otp.length !== 6 || !/^\d{6}$/.test(otp)) {
-            return res.json({ success: false, message: 'OTP must be 6 digits' });
+        // DEMO MODE: Accept any OTP
+        if (!otp) {
+            return res.json({ success: false, message: 'OTP is required' });
         }
 
         // In demo mode, we accept any 6-digit OTP
