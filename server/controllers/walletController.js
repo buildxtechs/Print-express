@@ -2,7 +2,10 @@ import Wallet from '../models/Wallet.js';
 import User from '../models/User.js';
 import stripeModule from 'stripe';
 
-const stripe = new stripeModule(process.env.STRIPE_SECRET_KEY);
+// Make Stripe optional - only initialize if API key is provided
+const stripe = process.env.STRIPE_SECRET_KEY
+    ? new stripeModule(process.env.STRIPE_SECRET_KEY)
+    : null;
 
 // Get wallet balance : GET /api/wallet/balance
 export const getBalance = async (req, res) => {
@@ -101,6 +104,11 @@ export const getAllWallets = async (req, res) => {
 // Create Wallet Recharge Session : POST /api/wallet/recharge
 export const createRechargeSession = async (req, res) => {
     try {
+        // Check if Stripe is configured
+        if (!stripe) {
+            return res.json({ success: false, message: "Payment gateway not configured. Please contact admin." });
+        }
+
         const { amount } = req.body;
         const userId = req.userId;
         const user = await User.findById(userId);
