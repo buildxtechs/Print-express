@@ -22,6 +22,11 @@ import billingRouter from './routes/billingRoute.js';
 import systemRouter from './routes/systemRoute.js';
 import bannerRouter from './routes/bannerRoute.js';
 import { stripeWebhooks } from './controllers/orderController.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -30,7 +35,12 @@ await connectDB()
 await connectCloudinary()
 
 // Allow multiple origins
-const allowedOrigins = ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175']
+const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:5175',
+    process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : null
+].filter(Boolean);
 
 app.post('/api/order/webhook', express.raw({ type: 'application/json' }), stripeWebhooks)
 
@@ -39,8 +49,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 
-
-app.get('/', (req, res) => res.send("API is Working"));
+// API Routes
 app.use('/api/user', userRouter)
 app.use('/api/seller', sellerRouter)
 app.use('/api/product', productRouter)
@@ -57,6 +66,19 @@ app.use('/api/shop', shopRouter)
 app.use('/api/billing', billingRouter)
 app.use('/api/system', systemRouter)
 app.use('/api/banner', bannerRouter)
+
+// Serve static files from React build in production
+if (process.env.NODE_ENV === 'production') {
+    const clientBuildPath = path.join(__dirname, '../client/dist');
+    app.use(express.static(clientBuildPath));
+
+    // Handle React routing - serve index.html for all non-API routes
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(clientBuildPath, 'index.html'));
+    });
+} else {
+    app.get('/', (req, res) => res.send("API is Working"));
+}
 
 app.listen(port, () => {
     console.log('\n╔══════════════════════════════════════╗');

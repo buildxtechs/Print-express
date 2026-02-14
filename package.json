@@ -1,0 +1,60 @@
+{
+  "name": "printexpress",
+  "version": "1.0.0",
+  "description": "PrintExpress - Unified Frontend and Backend",
+  "type": "module",
+  "scripts": {
+    "dev": "npm run dev:server & npm run dev:client",
+    "dev:client": "cd client && vite",
+    "dev:server": "cd server && nodemon server.js",
+    "build": "cd client && vite build",
+    "start": "npm run build && cd server && node server.js",
+    "preview": "cd client && vite preview",
+    "seed": "cd server && node seed.js",
+    "lint": "cd client && eslint ."
+  },
+  "keywords": [
+    "print",
+    "express",
+    "printing",
+    "service"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@tailwindcss/vite": "^4.0.16",
+    "axios": "^1.8.4",
+    "bcryptjs": "^3.0.2",
+    "cloudinary": "^2.6.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "firebase": "^12.9.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.13.1",
+    "multer": "^1.4.5-lts.2",
+    "pdf-lib": "^1.17.1",
+    "pdfkit": "^0.17.2",
+    "qrcode": "^1.5.4",
+    "razorpay": "^2.9.6",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-hot-toast": "^2.5.2",
+    "react-router-dom": "^7.4.0",
+    "stripe": "^17.7.0",
+    "tailwindcss": "^4.0.17"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.21.0",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.21.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "globals": "^15.15.0",
+    "nodemon": "^3.1.9",
+    "vite": "^6.2.0"
+  }
+}
